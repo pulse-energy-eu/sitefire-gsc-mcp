@@ -1,0 +1,21 @@
+# Node / TypeScript
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+coverage/
+.DS_Store
+
+# Env + secrets (nothing sensitive should land here; belt-and-braces)
+.env
+.env.*
+!.env.example
+
+# User-local OAuth state produced by the MCP at runtime.
+# The real path is ~/.sitefire-gsc/, but if a developer accidentally
+# points the MCP at the repo root during testing, we refuse to commit it.
+.sitefire-gsc/
+token.json
+
+# Fixture capture staging (raw live responses before sanitization)
+test/fixtures/.raw/
