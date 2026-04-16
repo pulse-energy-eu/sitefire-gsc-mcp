@@ -1,0 +1,26 @@
+{
+  "rows": [
+    {
+      "keys": ["https://sitefire.ai/"],
+      "clicks": 520,
+      "impressions": 8200,
+      "ctr": 0.0634,
+      "position": 3.4
+    },
+    {
+      "keys": ["https://sitefire.ai/blog/geo-optimization-guide"],
+      "clicks": 310,
+      "impressions": 5600,
+      "ctr": 0.0554,
+      "position": 5.1
+    },
+    {
+      "keys": ["https://sitefire.ai/blog/ai-seo-tools"],
+      "clicks": 180,
+      "impressions": 4300,
+      "ctr": 0.0419,
+      "position": 8.7
+    }
+  ],
+  "responseAggregationType": "AUTO"
+}
