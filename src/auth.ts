@@ -28,9 +28,9 @@ const TOKEN_PATH = path.join(TOKEN_DIR, "token.json");
 // consent, not the client_id.
 const CLIENT_ID =
   process.env.SITEFIRE_GSC_CLIENT_ID ??
-  "PLACEHOLDER_CLIENT_ID.apps.googleusercontent.com";
+  "727930320778-6slogb932botu9q4dfngll7aghl567l4.apps.googleusercontent.com";
 const CLIENT_SECRET =
-  process.env.SITEFIRE_GSC_CLIENT_SECRET ?? "PLACEHOLDER_CLIENT_SECRET";
+  process.env.SITEFIRE_GSC_CLIENT_SECRET ?? "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";
 
 export interface AuthState {
   status: "valid" | "missing" | "invalid" | "error";
