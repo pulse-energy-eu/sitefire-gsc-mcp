@@ -23,7 +23,7 @@ export function gscDateRange(days: number = 28, lagDays: number = 3): DateRange 
   const end = new Date();
   end.setDate(end.getDate() - lagDays);
   const start = new Date(end);
-  start.setDate(start.getDate() - days);
+  start.setDate(start.getDate() - (days - 1));
   return { start: isoDate(start), end: isoDate(end) };
 }
 
@@ -39,7 +39,7 @@ export function gscComparisonRanges(
   const prevEnd = new Date(current.start);
   prevEnd.setDate(prevEnd.getDate() - 1);
   const prevStart = new Date(prevEnd);
-  prevStart.setDate(prevStart.getDate() - days);
+  prevStart.setDate(prevStart.getDate() - (days - 1));
   return {
     current,
     previous: { start: isoDate(prevStart), end: isoDate(prevEnd) },

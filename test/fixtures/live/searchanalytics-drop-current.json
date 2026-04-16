@@ -1,0 +1,7 @@
+{
+  "rows": [
+    { "keys": ["sitefire"], "clicks": 150, "impressions": 1200, "ctr": 0.125, "position": 2.1 },
+    { "keys": ["geo optimization"], "clicks": 40, "impressions": 1800, "ctr": 0.022, "position": 6.5 },
+    { "keys": ["ai seo tools"], "clicks": 15, "impressions": 2000, "ctr": 0.0075, "position": 18.3 }
+  ]
+}

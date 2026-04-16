@@ -153,7 +153,7 @@ describe("findOpportunities", () => {
     const start = new Date(result.period.start);
     const end = new Date(result.period.end);
     const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-    expect(diffDays).toBe(7);
+    expect(diffDays).toBe(6); // 7 inclusive days = end - start of 6
   });
 
   it("descriptions and note fields are always present", async () => {

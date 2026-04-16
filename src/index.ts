@@ -19,6 +19,9 @@ import { listMyProperties } from "./tools/list-my-properties.js";
 import { setupCheck } from "./tools/setup-check.js";
 import { inspectUrlTool } from "./tools/inspect-url.js";
 import { findOpportunities } from "./tools/find-opportunities.js";
+import { weeklyReport } from "./tools/weekly-report.js";
+import { detectCannibalization } from "./tools/detect-cannibalization.js";
+import { trafficDropDiagnosis } from "./tools/traffic-drop-diagnosis.js";
 
 const VERSION = "0.1.0";
 
@@ -62,6 +65,7 @@ function registerTools(server: McpServer) {
         return toolResult(result as unknown as Record<string, unknown>);
       } catch (err) {
         if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+        if (err instanceof Error) return toolErrorResult(err.message);
         throw err;
       }
     },
@@ -89,12 +93,13 @@ function registerTools(server: McpServer) {
     },
     async ({ site_url }: { site_url?: string }) => {
       try {
-        const authState = await checkAuth();
         const client = await getClient();
+        const authState = await checkAuth();
         const result = await setupCheck(client, authState, site_url);
         return toolResult(result as unknown as Record<string, unknown>);
       } catch (err) {
         if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+        if (err instanceof Error) return toolErrorResult(err.message);
         throw err;
       }
     },
@@ -129,6 +134,7 @@ function registerTools(server: McpServer) {
         return toolResult(result as unknown as Record<string, unknown>);
       } catch (err) {
         if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+        if (err instanceof Error) return toolErrorResult(err.message);
         throw err;
       }
     },
@@ -167,6 +173,113 @@ function registerTools(server: McpServer) {
         return toolResult(result as unknown as Record<string, unknown>);
       } catch (err) {
         if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+        if (err instanceof Error) return toolErrorResult(err.message);
+        throw err;
+      }
+    },
+  );
+
+  // 5. weekly_report
+  server.registerTool(
+    "weekly_report",
+    {
+      description:
+        "Get a comprehensive weekly performance report for your site on Google: clicks, impressions, CTR, position trends, top queries, top pages, and sitemap health.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai".',
+          ),
+      },
+      annotations: {
+        title: "Weekly report",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    async ({ site_url }: { site_url: string }) => {
+      try {
+        const client = await getClient();
+        const result = await weeklyReport(client, site_url);
+        return toolResult(result as unknown as Record<string, unknown>);
+      } catch (err) {
+        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+        if (err instanceof Error) return toolErrorResult(err.message);
+        throw err;
+      }
+    },
+  );
+
+  // 6. detect_cannibalization
+  server.registerTool(
+    "detect_cannibalization",
+    {
+      description:
+        "Find queries where multiple pages on your site compete for the same Google ranking. Shows which pages cannibalize each other and recommends consolidation.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai".',
+          ),
+        min_impressions: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("Minimum total impressions to flag a query as cannibalized (default 50)."),
+      },
+      annotations: {
+        title: "Detect cannibalization",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    async ({ site_url, min_impressions }: { site_url: string; min_impressions?: number }) => {
+      try {
+        const client = await getClient();
+        const result = await detectCannibalization(client, site_url, min_impressions);
+        return toolResult(result as unknown as Record<string, unknown>);
+      } catch (err) {
+        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+        if (err instanceof Error) return toolErrorResult(err.message);
+        throw err;
+      }
+    },
+  );
+
+  // 7. traffic_drop_diagnosis
+  server.registerTool(
+    "traffic_drop_diagnosis",
+    {
+      description:
+        "Diagnose why your Google traffic dropped. Compares current vs previous period, identifies whether the cause is query loss, rank drop, coverage loss, or seasonal, and shows the biggest losers.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai".',
+          ),
+        compare_period: z
+          .enum(["wow", "mom"])
+          .optional()
+          .describe('Comparison mode: "wow" (week-over-week, default) or "mom" (month-over-month).'),
+      },
+      annotations: {
+        title: "Traffic drop diagnosis",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    async ({ site_url, compare_period }: { site_url: string; compare_period?: "wow" | "mom" }) => {
+      try {
+        const client = await getClient();
+        const result = await trafficDropDiagnosis(client, site_url, compare_period);
+        return toolResult(result as unknown as Record<string, unknown>);
+      } catch (err) {
+        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+        if (err instanceof Error) return toolErrorResult(err.message);
         throw err;
       }
     },
