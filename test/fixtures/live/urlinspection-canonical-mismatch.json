@@ -1,0 +1,16 @@
+{
+  "inspectionResult": {
+    "indexStatusResult": {
+      "verdict": "PARTIAL",
+      "coverageState": "Duplicate, Google chose different canonical than user",
+      "robotsTxtState": "ALLOWED",
+      "indexingState": "INDEXING_ALLOWED",
+      "lastCrawlTime": "2026-04-12T14:05:30.000Z",
+      "pageFetchState": "SUCCESSFUL",
+      "googleCanonical": "https://sitefire.ai/blog/geo-guide",
+      "userCanonical": "https://sitefire.ai/blog/geo-optimization-guide",
+      "referringUrls": [],
+      "crawledAs": "MOBILE"
+    }
+  }
+}

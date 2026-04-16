@@ -1,0 +1,40 @@
+{
+  "rows": [
+    {
+      "keys": ["sitefire"],
+      "clicks": 292,
+      "impressions": 1850,
+      "ctr": 0.1578,
+      "position": 1.3
+    },
+    {
+      "keys": ["geo optimization"],
+      "clicks": 145,
+      "impressions": 3200,
+      "ctr": 0.0453,
+      "position": 4.7
+    },
+    {
+      "keys": ["generative engine optimization"],
+      "clicks": 98,
+      "impressions": 2100,
+      "ctr": 0.0467,
+      "position": 6.2
+    },
+    {
+      "keys": ["ai seo tools"],
+      "clicks": 67,
+      "impressions": 4500,
+      "ctr": 0.0149,
+      "position": 14.8
+    },
+    {
+      "keys": ["sitefire ai"],
+      "clicks": 52,
+      "impressions": 890,
+      "ctr": 0.0584,
+      "position": 2.1
+    }
+  ],
+  "responseAggregationType": "AUTO"
+}

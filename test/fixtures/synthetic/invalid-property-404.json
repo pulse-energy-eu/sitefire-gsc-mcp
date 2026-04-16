@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": 404,
+    "message": "User does not have access to the requested site.",
+    "status": "NOT_FOUND",
+    "errors": [
+      {
+        "message": "User does not have access to the requested site.",
+        "domain": "global",
+        "reason": "notFound"
+      }
+    ]
+  }
+}

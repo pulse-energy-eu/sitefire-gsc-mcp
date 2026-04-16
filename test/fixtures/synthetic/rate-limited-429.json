@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": 429,
+    "message": "Quota exceeded for quota metric 'URL inspection requests' and limit 'URL inspection requests per day' of service 'searchconsole.googleapis.com'.",
+    "status": "RESOURCE_EXHAUSTED",
+    "errors": [
+      {
+        "message": "Quota exceeded for quota metric 'URL inspection requests'",
+        "domain": "global",
+        "reason": "rateLimitExceeded"
+      }
+    ]
+  }
+}

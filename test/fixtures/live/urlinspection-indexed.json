@@ -1,0 +1,21 @@
+{
+  "inspectionResult": {
+    "indexStatusResult": {
+      "verdict": "PASS",
+      "coverageState": "Submitted and indexed",
+      "robotsTxtState": "ALLOWED",
+      "indexingState": "INDEXING_ALLOWED",
+      "lastCrawlTime": "2026-04-13T09:22:41.000Z",
+      "pageFetchState": "SUCCESSFUL",
+      "googleCanonical": "https://sitefire.ai/",
+      "userCanonical": "https://sitefire.ai/",
+      "referringUrls": [
+        "https://www.ycombinator.com/companies/sitefire"
+      ],
+      "crawledAs": "MOBILE"
+    },
+    "mobileUsabilityResult": {
+      "verdict": "PASS"
+    }
+  }
+}

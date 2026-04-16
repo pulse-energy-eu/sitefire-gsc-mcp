@@ -1,0 +1,14 @@
+{
+  "error": {
+    "code": 400,
+    "message": "The URL is not under any of the caller's verified sites.",
+    "status": "INVALID_ARGUMENT",
+    "errors": [
+      {
+        "message": "The URL is not under any of the caller's verified sites.",
+        "domain": "global",
+        "reason": "badRequest"
+      }
+    ]
+  }
+}
