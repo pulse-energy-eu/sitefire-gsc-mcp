@@ -268,7 +268,13 @@ async function startupBanner() {
     if (authState.status === "valid") {
       try {
         const client = await getClient();
-        const sites = await client.listSites();
+        const STARTUP_TIMEOUT_MS = 3_000;
+        const sites = await Promise.race([
+          client.listSites(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("startup timeout")), STARTUP_TIMEOUT_MS),
+          ),
+        ]);
         process.stderr.write(
           `sitefire-gsc-mcp v${VERSION} - connected. ${sites.length} accessible ${sites.length === 1 ? "property" : "properties"} found.\n`,
         );

@@ -17,6 +17,7 @@ export declare function deleteToken(): void;
 /**
  * Get an authenticated OAuth2 client. If no token exists, triggers
  * the browser-based consent flow (local loopback redirect).
+ * Concurrent callers share a single flow via the singleton guard.
  */
 export declare function getAuthClient(): Promise<OAuth2Client>;
 /**

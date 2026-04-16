@@ -8,6 +8,7 @@
  */
 import { OAuth2Client } from "google-auth-library";
 import { execSync } from "node:child_process";
+import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as http from "node:http";
 import * as path from "node:path";
@@ -55,9 +56,12 @@ export function deleteToken() {
 function createOAuth2Client(redirectUri) {
     return new OAuth2Client(CLIENT_ID, CLIENT_SECRET, redirectUri);
 }
+// Singleton guard: prevents multiple concurrent OAuth browser flows.
+let pendingAuthFlow = null;
 /**
  * Get an authenticated OAuth2 client. If no token exists, triggers
  * the browser-based consent flow (local loopback redirect).
+ * Concurrent callers share a single flow via the singleton guard.
  */
 export async function getAuthClient() {
     const token = loadToken();
@@ -72,8 +76,13 @@ export async function getAuthClient() {
         });
         return client;
     }
-    // No token: run the installed app flow
-    return runInstalledAppFlow();
+    // No token: run the installed app flow (singleton to prevent concurrent launches)
+    if (pendingAuthFlow)
+        return pendingAuthFlow;
+    pendingAuthFlow = runInstalledAppFlow().finally(() => {
+        pendingAuthFlow = null;
+    });
+    return pendingAuthFlow;
 }
 /**
  * Validate the current token by attempting a lightweight API call.
@@ -136,10 +145,12 @@ async function runInstalledAppFlow() {
             const port = addr.port;
             const redirectUri = `http://127.0.0.1:${port}`;
             const client = createOAuth2Client(redirectUri);
+            const state = crypto.randomBytes(16).toString("hex");
             const authUrl = client.generateAuthUrl({
                 access_type: "offline",
                 scope: SCOPES,
                 prompt: "consent",
+                state,
             });
             // Print the URL for the user (and try to open browser)
             process.stderr.write(`\nOpen this URL in your browser to authorize sitefire-gsc-mcp:\n${authUrl}\n\n`);
@@ -165,6 +176,15 @@ async function runInstalledAppFlow() {
                     if (!code) {
                         res.writeHead(400, { "Content-Type": "text/plain" });
                         res.end("Missing authorization code.");
+                        return;
+                    }
+                    const returnedState = parsed.query.state;
+                    if (returnedState !== state) {
+                        res.writeHead(400, { "Content-Type": "text/html" });
+                        res.end("<html><body><h2>Authorization failed.</h2><p>State mismatch - possible CSRF attack. Please retry.</p></body></html>");
+                        clearTimeout(timeout);
+                        server.close();
+                        reject(new Error("OAuth state mismatch. Re-run setup_check to retry."));
                         return;
                     }
                     const { tokens } = await client.getToken(code);

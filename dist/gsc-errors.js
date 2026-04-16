@@ -60,7 +60,20 @@ export function translateError(err, context) {
     }
     // 429 rate limit
     if (httpStatus === 429) {
-        return new GscApiError("RATE_LIMITED", "Google's URL-inspection limit for this site has been hit. Try again in a minute or tomorrow.", 429, message);
+        const retryAfter = gaxErr.response?.headers?.["retry-after"];
+        let retryHint = "Try again in a minute or tomorrow.";
+        if (retryAfter) {
+            const seconds = parseInt(retryAfter, 10);
+            if (!isNaN(seconds)) {
+                retryHint = seconds >= 60
+                    ? `Try again in about ${Math.ceil(seconds / 60)} minutes.`
+                    : `Try again in ${seconds} seconds.`;
+            }
+            else {
+                retryHint = `Try again after ${retryAfter}.`;
+            }
+        }
+        return new GscApiError("RATE_LIMITED", `Google's rate limit for this site has been hit. ${retryHint}`, 429, message);
     }
     // 400 bad argument (property format, date range, etc.)
     if (httpStatus === 400) {

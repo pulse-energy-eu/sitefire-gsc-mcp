@@ -52,7 +52,7 @@ export function translateError(err: unknown, context?: { siteUrl?: string; url?:
     code?: number;
     message?: string;
     errors?: Array<{ reason?: string; domain?: string; message?: string }>;
-    response?: { status?: number; data?: GoogleErrorBody };
+    response?: { status?: number; data?: GoogleErrorBody; headers?: Record<string, string> };
   };
 
   const httpStatus = gaxErr.code ?? gaxErr.response?.status;
@@ -102,9 +102,21 @@ export function translateError(err: unknown, context?: { siteUrl?: string; url?:
 
   // 429 rate limit
   if (httpStatus === 429) {
+    const retryAfter = gaxErr.response?.headers?.["retry-after"] as string | undefined;
+    let retryHint = "Try again in a minute or tomorrow.";
+    if (retryAfter) {
+      const seconds = parseInt(retryAfter, 10);
+      if (!isNaN(seconds)) {
+        retryHint = seconds >= 60
+          ? `Try again in about ${Math.ceil(seconds / 60)} minutes.`
+          : `Try again in ${seconds} seconds.`;
+      } else {
+        retryHint = `Try again after ${retryAfter}.`;
+      }
+    }
     return new GscApiError(
       "RATE_LIMITED",
-      "Google's URL-inspection limit for this site has been hit. Try again in a minute or tomorrow.",
+      `Google's rate limit for this site has been hit. ${retryHint}`,
       429,
       message,
     );
