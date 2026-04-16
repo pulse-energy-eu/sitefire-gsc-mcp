@@ -59,8 +59,48 @@ describe("translateError", () => {
     };
     const result = translateError(err);
     expect(result.code).toBe("RATE_LIMITED");
-    expect(result.userMessage).toContain("URL-inspection limit");
+    expect(result.userMessage).toContain("rate limit");
     expect(result.httpStatus).toBe(429);
+  });
+
+  it("includes Retry-After seconds in 429 message", () => {
+    const err = {
+      code: 429,
+      message: "Quota exceeded",
+      response: { status: 429, headers: { "retry-after": "120" } },
+    };
+    const result = translateError(err);
+    expect(result.code).toBe("RATE_LIMITED");
+    expect(result.userMessage).toContain("2 minutes");
+  });
+
+  it("includes Retry-After short seconds in 429 message", () => {
+    const err = {
+      code: 429,
+      message: "Quota exceeded",
+      response: { status: 429, headers: { "retry-after": "30" } },
+    };
+    const result = translateError(err);
+    expect(result.code).toBe("RATE_LIMITED");
+    expect(result.userMessage).toContain("30 seconds");
+  });
+
+  it("includes Retry-After date in 429 message", () => {
+    const err = {
+      code: 429,
+      message: "Quota exceeded",
+      response: { status: 429, headers: { "retry-after": "Wed, 16 Apr 2026 13:00:00 GMT" } },
+    };
+    const result = translateError(err);
+    expect(result.code).toBe("RATE_LIMITED");
+    expect(result.userMessage).toContain("Wed, 16 Apr 2026");
+  });
+
+  it("uses fallback hint when no Retry-After header on 429", () => {
+    const err = { code: 429, message: "Quota exceeded" };
+    const result = translateError(err);
+    expect(result.code).toBe("RATE_LIMITED");
+    expect(result.userMessage).toContain("Try again in a minute or tomorrow");
   });
 
   it("translates 400 INVALID_ARGUMENT with site URL context", () => {

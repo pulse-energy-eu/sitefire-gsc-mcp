@@ -161,7 +161,7 @@ describe("inspectUrlTool", () => {
       inspectUrl: vi.fn().mockRejectedValue(
         new GscApiError(
           "RATE_LIMITED",
-          "Google's URL-inspection limit for this site has been hit. Try again in a minute or tomorrow.",
+          "Google's rate limit for this site has been hit. Try again in a minute or tomorrow.",
           429,
         ),
       ),
