@@ -26,11 +26,8 @@ const TOKEN_PATH = path.join(TOKEN_DIR, "token.json");
 // These are NOT secrets: Google's installed-app OAuth model expects them
 // distributed with the binary. The security boundary is the user's browser
 // consent, not the client_id.
-const CLIENT_ID =
-  process.env.SITEFIRE_GSC_CLIENT_ID ??
-  "PLACEHOLDER_CLIENT_ID.apps.googleusercontent.com";
-const CLIENT_SECRET =
-  process.env.SITEFIRE_GSC_CLIENT_SECRET ?? "PLACEHOLDER_CLIENT_SECRET";
+const CLIENT_ID = process.env.SITEFIRE_GSC_CLIENT_ID ?? "";
+const CLIENT_SECRET = process.env.SITEFIRE_GSC_CLIENT_SECRET ?? "";
 
 export interface AuthState {
   status: "valid" | "missing" | "invalid" | "error";

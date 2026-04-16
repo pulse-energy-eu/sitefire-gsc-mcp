@@ -26,7 +26,10 @@ A Claude Desktop MCP that wraps the Google Search Console API behind seven compo
 Run this in your terminal:
 
 ```bash
-claude mcp add sitefire-gsc -- npx -y github:pulse-energy-eu/sitefire-gsc-mcp
+claude mcp add sitefire-gsc \
+  -e SITEFIRE_GSC_CLIENT_ID="727930320778-6slogb932botu9q4dfngll7aghl567l4.apps.googleusercontent.com" \
+  -e SITEFIRE_GSC_CLIENT_SECRET="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" \
+  -- npx -y github:pulse-energy-eu/sitefire-gsc-mcp
 ```
 
 Or manually add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
@@ -36,7 +39,11 @@ Or manually add to your Claude Desktop config (`~/Library/Application Support/Cl
   "mcpServers": {
     "sitefire-gsc": {
       "command": "npx",
-      "args": ["-y", "github:pulse-energy-eu/sitefire-gsc-mcp"]
+      "args": ["-y", "github:pulse-energy-eu/sitefire-gsc-mcp"],
+      "env": {
+        "SITEFIRE_GSC_CLIENT_ID": "727930320778-6slogb932botu9q4dfngll7aghl567l4.apps.googleusercontent.com",
+        "SITEFIRE_GSC_CLIENT_SECRET": "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"
+      }
     }
   }
 }

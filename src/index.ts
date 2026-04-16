@@ -1,0 +1,313 @@
+#!/usr/bin/env node
+
+/**
+ * sitefire-gsc-mcp — MCP server entry point.
+ *
+ * Registers tools, validates auth on startup (soft-fail),
+ * and connects via stdio transport.
+ */
+
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+import { getAuthClient, checkAuth, tokenExists } from "./auth.js";
+import { GscClient } from "./gsc-client.js";
+import { GscApiError } from "./gsc-errors.js";
+
+import { listMyProperties } from "./tools/list-my-properties.js";
+import { setupCheck } from "./tools/setup-check.js";
+import { inspectUrlTool } from "./tools/inspect-url.js";
+import { findOpportunities } from "./tools/find-opportunities.js";
+import { weeklyReport } from "./tools/weekly-report.js";
+import { detectCannibalization } from "./tools/detect-cannibalization.js";
+import { trafficDropDiagnosis } from "./tools/traffic-drop-diagnosis.js";
+
+const VERSION = "0.1.0";
+
+function toolErrorResult(message: string) {
+  return {
+    content: [{ type: "text" as const, text: message }],
+    isError: true as const,
+  };
+}
+
+function toolResult(data: Record<string, unknown>) {
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+    structuredContent: data,
+  };
+}
+
+async function getClient(): Promise<GscClient> {
+  const auth = await getAuthClient();
+  return new GscClient(auth);
+}
+
+/**
+ * Wraps a tool handler with the common getClient + error-handling boilerplate.
+ *
+ * The callback receives the authenticated GscClient and the parsed args from
+ * the MCP SDK, and returns a result object. Errors are caught and converted
+ * to MCP tool error responses automatically.
+ */
+function handleToolCall<A>(
+  fn: (client: GscClient, args: A) => Promise<Record<string, unknown>>,
+): (args: A) => Promise<ReturnType<typeof toolResult> | ReturnType<typeof toolErrorResult>> {
+  return async (args: A) => {
+    try {
+      const client = await getClient();
+      const result = await fn(client, args);
+      return toolResult(result);
+    } catch (err) {
+      if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+      if (err instanceof Error) return toolErrorResult(err.message);
+      throw err;
+    }
+  };
+}
+
+function registerTools(server: McpServer) {
+  // 1. list_my_properties
+  server.registerTool(
+    "list_my_properties",
+    {
+      description:
+        "List all Google Search Console properties (sites) accessible under your Google account. Use this to see which sites you can query.",
+      inputSchema: {},
+      annotations: {
+        title: "List my properties",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    handleToolCall(async (client) => {
+      return listMyProperties(client) as unknown as Promise<Record<string, unknown>>;
+    }),
+  );
+
+  // 2. setup_check
+  //    Note: checkAuth() is called AFTER getClient() - this ordering is intentional.
+  server.registerTool(
+    "setup_check",
+    {
+      description:
+        "Check if everything is configured correctly: auth, property access, sitemaps, data availability. Run this first to diagnose setup issues.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .optional()
+          .describe(
+            'Property URL to check, e.g. "sc-domain:sitefire.ai" or "https://sitefire.ai/". If omitted and you have exactly one property, it auto-selects.',
+          ),
+      },
+      annotations: {
+        title: "Setup check",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    handleToolCall(async (client, { site_url }: { site_url?: string }) => {
+      const authState = await checkAuth();
+      return setupCheck(client, authState, site_url) as unknown as Promise<Record<string, unknown>>;
+    }),
+  );
+
+  // 3. inspect_url
+  server.registerTool(
+    "inspect_url",
+    {
+      description:
+        "Inspect what Google knows about a specific URL: index status, crawl info, canonical, mobile usability, and a plain-English interpretation.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai" or "https://sitefire.ai/".',
+          ),
+        url: z
+          .string()
+          .describe("The full URL to inspect, e.g. https://sitefire.ai/blog/my-post."),
+      },
+      annotations: {
+        title: "Inspect URL",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    handleToolCall(async (client, { site_url, url }: { site_url: string; url: string }) => {
+      return inspectUrlTool(client, site_url, url) as unknown as Promise<Record<string, unknown>>;
+    }),
+  );
+
+  // 4. find_opportunities
+  server.registerTool(
+    "find_opportunities",
+    {
+      description:
+        "Find growth opportunities for your Google traffic: striking-distance queries (positions 11-20), low-hanging fruit (high impressions, low CTR), and zero-click queries.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai".',
+          ),
+        days: z
+          .number()
+          .int()
+          .min(1)
+          .max(90)
+          .optional()
+          .describe("Lookback window in days (default 28)."),
+      },
+      annotations: {
+        title: "Find opportunities",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    handleToolCall(async (client, { site_url, days }: { site_url: string; days?: number }) => {
+      return findOpportunities(client, site_url, days) as unknown as Promise<Record<string, unknown>>;
+    }),
+  );
+
+  // 5. weekly_report
+  server.registerTool(
+    "weekly_report",
+    {
+      description:
+        "Get a comprehensive weekly performance report for your site on Google: clicks, impressions, CTR, position trends, top queries, top pages, and sitemap health.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai".',
+          ),
+      },
+      annotations: {
+        title: "Weekly report",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    handleToolCall(async (client, { site_url }: { site_url: string }) => {
+      return weeklyReport(client, site_url) as unknown as Promise<Record<string, unknown>>;
+    }),
+  );
+
+  // 6. detect_cannibalization
+  server.registerTool(
+    "detect_cannibalization",
+    {
+      description:
+        "Find queries where multiple pages on your site compete for the same Google ranking. Shows which pages cannibalize each other and recommends consolidation.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai".',
+          ),
+        min_impressions: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe("Minimum total impressions to flag a query as cannibalized (default 50)."),
+      },
+      annotations: {
+        title: "Detect cannibalization",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    handleToolCall(async (client, { site_url, min_impressions }: { site_url: string; min_impressions?: number }) => {
+      return detectCannibalization(client, site_url, min_impressions) as unknown as Promise<Record<string, unknown>>;
+    }),
+  );
+
+  // 7. traffic_drop_diagnosis
+  server.registerTool(
+    "traffic_drop_diagnosis",
+    {
+      description:
+        "Diagnose why your Google traffic dropped. Compares current vs previous period, identifies whether the cause is query loss, rank drop, coverage loss, or seasonal, and shows the biggest losers.",
+      inputSchema: {
+        site_url: z
+          .string()
+          .describe(
+            'The GSC property, e.g. "sc-domain:sitefire.ai".',
+          ),
+        compare_period: z
+          .enum(["wow", "mom"])
+          .optional()
+          .describe('Comparison mode: "wow" (week-over-week, default) or "mom" (month-over-month).'),
+      },
+      annotations: {
+        title: "Traffic drop diagnosis",
+        readOnlyHint: true,
+        idempotentHint: true,
+      },
+    },
+    handleToolCall(async (client, { site_url, compare_period }: { site_url: string; compare_period?: "wow" | "mom" }) => {
+      return trafficDropDiagnosis(client, site_url, compare_period) as unknown as Promise<Record<string, unknown>>;
+    }),
+  );
+}
+
+async function startupBanner() {
+  const hasToken = tokenExists();
+  if (!hasToken) {
+    process.stderr.write(
+      `sitefire-gsc-mcp v${VERSION} - no Google authorization yet. All tools will route you through setup_check to complete the OAuth flow.\n`,
+    );
+    return;
+  }
+
+  try {
+    const authState = await checkAuth();
+    if (authState.status === "valid") {
+      try {
+        const client = await getClient();
+        const sites = await client.listSites();
+        process.stderr.write(
+          `sitefire-gsc-mcp v${VERSION} - connected. ${sites.length} accessible ${sites.length === 1 ? "property" : "properties"} found.\n`,
+        );
+      } catch {
+        process.stderr.write(
+          `sitefire-gsc-mcp v${VERSION} - authorized but could not list properties. Tools will retry on first invocation.\n`,
+        );
+      }
+    } else if (authState.status === "invalid") {
+      process.stderr.write(
+        `sitefire-gsc-mcp v${VERSION} - ${authState.message}\n`,
+      );
+    } else {
+      process.stderr.write(
+        `sitefire-gsc-mcp v${VERSION} - could not validate authorization. Tools will retry on first invocation.\n`,
+      );
+    }
+  } catch {
+    process.stderr.write(
+      `sitefire-gsc-mcp v${VERSION} - could not reach Google to validate authorization. Tools will retry on first invocation.\n`,
+    );
+  }
+}
+
+async function main() {
+  await startupBanner();
+
+  const server = new McpServer({
+    name: "sitefire-gsc-mcp",
+    version: VERSION,
+  });
+
+  registerTools(server);
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+}
+
+main().catch((err) => {
+  process.stderr.write(`fatal: ${err instanceof Error ? err.message : String(err)}\n`);
+  process.exit(1);
+});

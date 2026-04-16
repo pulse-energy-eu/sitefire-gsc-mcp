@@ -1,0 +1,61 @@
+{
+  "rows": [
+    {
+      "keys": ["geo optimization", "https://sitefire.ai/blog/geo-optimization-guide"],
+      "clicks": 80,
+      "impressions": 2000,
+      "ctr": 0.04,
+      "position": 4.5
+    },
+    {
+      "keys": ["geo optimization", "https://sitefire.ai/blog/what-is-geo"],
+      "clicks": 30,
+      "impressions": 800,
+      "ctr": 0.0375,
+      "position": 7.2
+    },
+    {
+      "keys": ["geo optimization", "https://sitefire.ai/"],
+      "clicks": 10,
+      "impressions": 400,
+      "ctr": 0.025,
+      "position": 12.1
+    },
+    {
+      "keys": ["sitefire", "https://sitefire.ai/"],
+      "clicks": 200,
+      "impressions": 1500,
+      "ctr": 0.1333,
+      "position": 1.2
+    },
+    {
+      "keys": ["sitefire", "https://sitefire.ai/blog/about-sitefire"],
+      "clicks": 40,
+      "impressions": 600,
+      "ctr": 0.0667,
+      "position": 3.8
+    },
+    {
+      "keys": ["ai visibility", "https://sitefire.ai/blog/ai-visibility-guide"],
+      "clicks": 55,
+      "impressions": 1200,
+      "ctr": 0.0458,
+      "position": 5.3
+    },
+    {
+      "keys": ["sitefire demo", "https://sitefire.ai/demo"],
+      "clicks": 3,
+      "impressions": 20,
+      "ctr": 0.15,
+      "position": 2.5
+    },
+    {
+      "keys": ["sitefire demo", "https://sitefire.ai/blog/demo-walkthrough"],
+      "clicks": 1,
+      "impressions": 15,
+      "ctr": 0.0667,
+      "position": 6.1
+    }
+  ],
+  "responseAggregationType": "AUTO"
+}
