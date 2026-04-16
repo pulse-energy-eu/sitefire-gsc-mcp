@@ -44,6 +44,29 @@ async function getClient(): Promise<GscClient> {
   return new GscClient(auth);
 }
 
+/**
+ * Wraps a tool handler with the common getClient + error-handling boilerplate.
+ *
+ * The callback receives the authenticated GscClient and the parsed args from
+ * the MCP SDK, and returns a result object. Errors are caught and converted
+ * to MCP tool error responses automatically.
+ */
+function handleToolCall<A>(
+  fn: (client: GscClient, args: A) => Promise<Record<string, unknown>>,
+): (args: A) => Promise<ReturnType<typeof toolResult> | ReturnType<typeof toolErrorResult>> {
+  return async (args: A) => {
+    try {
+      const client = await getClient();
+      const result = await fn(client, args);
+      return toolResult(result);
+    } catch (err) {
+      if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
+      if (err instanceof Error) return toolErrorResult(err.message);
+      throw err;
+    }
+  };
+}
+
 function registerTools(server: McpServer) {
   // 1. list_my_properties
   server.registerTool(
@@ -58,20 +81,13 @@ function registerTools(server: McpServer) {
         idempotentHint: true,
       },
     },
-    async () => {
-      try {
-        const client = await getClient();
-        const result = await listMyProperties(client);
-        return toolResult(result as unknown as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
-        if (err instanceof Error) return toolErrorResult(err.message);
-        throw err;
-      }
-    },
+    handleToolCall(async (client) => {
+      return listMyProperties(client) as unknown as Promise<Record<string, unknown>>;
+    }),
   );
 
   // 2. setup_check
+  //    Note: checkAuth() is called AFTER getClient() - this ordering is intentional.
   server.registerTool(
     "setup_check",
     {
@@ -91,18 +107,10 @@ function registerTools(server: McpServer) {
         idempotentHint: true,
       },
     },
-    async ({ site_url }: { site_url?: string }) => {
-      try {
-        const client = await getClient();
-        const authState = await checkAuth();
-        const result = await setupCheck(client, authState, site_url);
-        return toolResult(result as unknown as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
-        if (err instanceof Error) return toolErrorResult(err.message);
-        throw err;
-      }
-    },
+    handleToolCall(async (client, { site_url }: { site_url?: string }) => {
+      const authState = await checkAuth();
+      return setupCheck(client, authState, site_url) as unknown as Promise<Record<string, unknown>>;
+    }),
   );
 
   // 3. inspect_url
@@ -127,17 +135,9 @@ function registerTools(server: McpServer) {
         idempotentHint: true,
       },
     },
-    async ({ site_url, url }: { site_url: string; url: string }) => {
-      try {
-        const client = await getClient();
-        const result = await inspectUrlTool(client, site_url, url);
-        return toolResult(result as unknown as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
-        if (err instanceof Error) return toolErrorResult(err.message);
-        throw err;
-      }
-    },
+    handleToolCall(async (client, { site_url, url }: { site_url: string; url: string }) => {
+      return inspectUrlTool(client, site_url, url) as unknown as Promise<Record<string, unknown>>;
+    }),
   );
 
   // 4. find_opportunities
@@ -166,17 +166,9 @@ function registerTools(server: McpServer) {
         idempotentHint: true,
       },
     },
-    async ({ site_url, days }: { site_url: string; days?: number }) => {
-      try {
-        const client = await getClient();
-        const result = await findOpportunities(client, site_url, days);
-        return toolResult(result as unknown as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
-        if (err instanceof Error) return toolErrorResult(err.message);
-        throw err;
-      }
-    },
+    handleToolCall(async (client, { site_url, days }: { site_url: string; days?: number }) => {
+      return findOpportunities(client, site_url, days) as unknown as Promise<Record<string, unknown>>;
+    }),
   );
 
   // 5. weekly_report
@@ -198,17 +190,9 @@ function registerTools(server: McpServer) {
         idempotentHint: true,
       },
     },
-    async ({ site_url }: { site_url: string }) => {
-      try {
-        const client = await getClient();
-        const result = await weeklyReport(client, site_url);
-        return toolResult(result as unknown as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
-        if (err instanceof Error) return toolErrorResult(err.message);
-        throw err;
-      }
-    },
+    handleToolCall(async (client, { site_url }: { site_url: string }) => {
+      return weeklyReport(client, site_url) as unknown as Promise<Record<string, unknown>>;
+    }),
   );
 
   // 6. detect_cannibalization
@@ -236,17 +220,9 @@ function registerTools(server: McpServer) {
         idempotentHint: true,
       },
     },
-    async ({ site_url, min_impressions }: { site_url: string; min_impressions?: number }) => {
-      try {
-        const client = await getClient();
-        const result = await detectCannibalization(client, site_url, min_impressions);
-        return toolResult(result as unknown as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
-        if (err instanceof Error) return toolErrorResult(err.message);
-        throw err;
-      }
-    },
+    handleToolCall(async (client, { site_url, min_impressions }: { site_url: string; min_impressions?: number }) => {
+      return detectCannibalization(client, site_url, min_impressions) as unknown as Promise<Record<string, unknown>>;
+    }),
   );
 
   // 7. traffic_drop_diagnosis
@@ -272,17 +248,9 @@ function registerTools(server: McpServer) {
         idempotentHint: true,
       },
     },
-    async ({ site_url, compare_period }: { site_url: string; compare_period?: "wow" | "mom" }) => {
-      try {
-        const client = await getClient();
-        const result = await trafficDropDiagnosis(client, site_url, compare_period);
-        return toolResult(result as unknown as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof GscApiError) return toolErrorResult(err.userMessage);
-        if (err instanceof Error) return toolErrorResult(err.message);
-        throw err;
-      }
-    },
+    handleToolCall(async (client, { site_url, compare_period }: { site_url: string; compare_period?: "wow" | "mom" }) => {
+      return trafficDropDiagnosis(client, site_url, compare_period) as unknown as Promise<Record<string, unknown>>;
+    }),
   );
 }
 
